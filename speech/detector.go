@@ -176,6 +176,14 @@ type Segment struct {
 	SpeechEndAt float64
 }
 
+func (sd *Detector) Infer(pcmData []float32) (num float32, err error) {
+	speechProb, err := sd.infer(pcmData)
+	if err != nil {
+		return 0, fmt.Errorf("failed to infer: %w", err)
+	}
+	return speechProb, nil
+}
+
 func (sd *Detector) Detect(pcm []float32) ([]Segment, error) {
 	if sd == nil {
 		return nil, fmt.Errorf("invalid nil detector")
