@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	stateLen   = 2 * 1 * 128
-	contextLen = 64
+	stateLen = 2 * 1 * 128
 )
 
 type LogLevel int
@@ -92,8 +91,9 @@ type Detector struct {
 
 	cfg DetectorConfig
 
-	state [stateLen]float32
-	ctx   [contextLen]float32
+	state      [stateLen]float32
+	ctx        []float32
+	contextLen int
 
 	currSample int
 	triggered  bool
@@ -109,6 +109,13 @@ func NewDetector(cfg DetectorConfig) (*Detector, error) {
 		cfg:      cfg,
 		cStrings: map[string]*C.char{},
 	}
+
+	contextLen := 64
+	if sd.cfg.SampleRate == 8000 {
+		contextLen = 32
+	}
+	sd.contextLen = contextLen
+	sd.ctx = make([]float32, contextLen)
 
 	sd.api = C.OrtGetApi()
 	if sd.api == nil {
@@ -270,7 +277,7 @@ func (sd *Detector) Reset() error {
 	for i := 0; i < stateLen; i++ {
 		sd.state[i] = 0
 	}
-	for i := 0; i < contextLen; i++ {
+	for i := 0; i < sd.contextLen; i++ {
 		sd.ctx[i] = 0
 	}
 
