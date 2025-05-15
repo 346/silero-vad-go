@@ -12,7 +12,7 @@ import (
 	"unsafe"
 )
 
-func (sd *Detector) infer(pcm []float32) (float32, error) {
+func (sd *Detector) Infer(pcm []float32, state []float32) (float32, error) {
 	// Create tensors
 	var pcmValue *C.OrtValue
 	pcmInputDims := []C.longlong{
@@ -28,7 +28,7 @@ func (sd *Detector) infer(pcm []float32) (float32, error) {
 
 	var stateValue *C.OrtValue
 	stateNodeInputDims := []C.longlong{2, 1, 128}
-	status = C.OrtApiCreateTensorWithDataAsOrtValue(sd.api, sd.memoryInfo, unsafe.Pointer(&sd.state[0]), C.size_t(stateLen*4), &stateNodeInputDims[0], C.size_t(len(stateNodeInputDims)), C.ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &stateValue)
+	status = C.OrtApiCreateTensorWithDataAsOrtValue(sd.api, sd.memoryInfo, unsafe.Pointer(&state[0]), C.size_t(stateLen*4), &stateNodeInputDims[0], C.size_t(len(stateNodeInputDims)), C.ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &stateValue)
 	defer C.OrtApiReleaseStatus(sd.api, status)
 	if status != nil {
 		return 0, fmt.Errorf("failed to create value: %s", C.GoString(C.OrtApiGetErrorMessage(sd.api, status)))
@@ -80,7 +80,7 @@ func (sd *Detector) infer(pcm []float32) (float32, error) {
 		return 0, fmt.Errorf("failed to get tensor data: %s", C.GoString(C.OrtApiGetErrorMessage(sd.api, status)))
 	}
 
-	C.memcpy(unsafe.Pointer(&sd.state[0]), stateN, stateLen*4)
+	C.memcpy(unsafe.Pointer(&state[0]), stateN, stateLen*4)
 
 	C.OrtApiReleaseValue(sd.api, outputs[0])
 	C.OrtApiReleaseValue(sd.api, outputs[1])

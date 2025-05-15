@@ -91,7 +91,7 @@ type Detector struct {
 
 	cfg DetectorConfig
 
-	state      [stateLen]float32
+	state      []float32
 	ctx        []float32
 	contextLen int
 
@@ -116,6 +116,7 @@ func NewDetector(cfg DetectorConfig) (*Detector, error) {
 	}
 	sd.contextLen = contextLen
 	sd.ctx = make([]float32, contextLen)
+	sd.state = make([]float32, stateLen)
 
 	sd.api = C.OrtGetApi()
 	if sd.api == nil {
@@ -183,14 +184,6 @@ type Segment struct {
 	SpeechEndAt float64
 }
 
-func (sd *Detector) Infer(pcmData []float32) (num float32, err error) {
-	speechProb, err := sd.infer(pcmData)
-	if err != nil {
-		return 0, fmt.Errorf("failed to infer: %w", err)
-	}
-	return speechProb, nil
-}
-
 func (sd *Detector) Detect(pcm []float32) ([]Segment, error) {
 	if sd == nil {
 		return nil, fmt.Errorf("invalid nil detector")
@@ -212,7 +205,7 @@ func (sd *Detector) Detect(pcm []float32) ([]Segment, error) {
 
 	var segments []Segment
 	for i := 0; i < len(pcm)-windowSize; i += windowSize {
-		speechProb, err := sd.infer(pcm[i : i+windowSize])
+		speechProb, err := sd.Infer(pcm[i:i+windowSize], sd.state)
 		if err != nil {
 			return nil, fmt.Errorf("infer failed: %w", err)
 		}
